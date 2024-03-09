@@ -23,21 +23,26 @@ impl LinbpqApp {
 }
 
 fn tester() -> Result<String, Box<dyn Error>> {
-    // Connect to Direwolf APRS soundcard modem
-    let mut stream = TcpStream::connect("127.0.0.1:8000")?;
+    let mut stream = TcpStream::connect("127.0.0.1:8001")?;
 
-    // Construct a sample APRS packet data.
-    // Be sure to replace this with your actual packet data following APRS specifications.
-    let data = "YOUR_CALLSIGN-1>APRS,TCPIP*:your message here{your message ID}\n";
+    // KISS frame boundary
+    let frame_start_end = 0xC0;
+    // KISS command/data byte for data frames (assuming port 0)
+    let command = 0x00;
 
-    // Send the data
-    stream.write_all(data.as_bytes())?;
+    // Example KISS frame to send (replace with actual frame content)
+    let data = b"Hello, Direwolf!";
+    let mut frame = Vec::new();
+    frame.push(frame_start_end);
+    frame.push(command);
+    frame.extend_from_slice(data);
+    frame.push(frame_start_end);
 
-    // It's good practice to ensure all data is sent before closing.
+    stream.write_all(&frame)?;
     stream.flush()?;
-    println!("Packet sent successfully!");
+    println!("KISS frame sent successfully!");
 
-    Ok("Hello".into())
+    Ok("KISS frame sent".into())
 }
 
 impl eframe::App for LinbpqApp {
