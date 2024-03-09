@@ -10,8 +10,6 @@ pub struct LinbpqApp {
     command_input: String,
 }
 
-
-
 impl LinbpqApp {
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
