@@ -10,12 +10,19 @@ use std::error::Error;
 #[derive(Default)]
 pub struct LinbpqApp {
     // Server interaction stuff:
-    received_text: String,
+    received_messages: Vec<Message>,
     command_input: String,
     destination_address: String, // New field for destination address
     message_input: String,       // New field for message input
     #[serde(skip)] // Correctly used to skip both serialization and deserialization
     received_messages_rx: Option<std::sync::mpsc::Receiver<String>>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize)]
+struct Message {
+    source: String,
+    destination: String,
+    content: String,
 }
 
 impl LinbpqApp {
@@ -100,8 +107,13 @@ impl eframe::App for LinbpqApp {
                             .unwrap_or_else(|_| "tnc:tcpkiss:localhost:8001".to_string())
                             .as_str(),
                     ) {
-                        self.received_text
-                            .push_str(&format!("Error starting listener: {}", e));
+                        let error_message = format!("Error starting listener: {}", e);
+                        let error_display = Message {
+                            source: "System".to_string(),
+                            destination: "N/A".to_string(),
+                            content: error_message,
+                        };
+                        self.received_messages.push(error_display);
                     }
                 }
                 if ui.button("Disconnect").clicked() {
@@ -123,10 +135,12 @@ impl eframe::App for LinbpqApp {
                 egui::ScrollArea::vertical()
                     .auto_shrink([false; 2])
                     .show(ui, |ui| {
-                        ui.add_sized(
-                            [ui.available_width(), ui.available_height() - 60.0],
-                            egui::Label::new(&self.received_text).wrap(true),
-                        );
+                        for message in &self.received_messages {
+                            ui.label(format!(
+                                "**{} -> {}:**\t{}",
+                                message.source, message.destination, message.content
+                            ));
+                        }
                         ui.scroll_to_cursor(Some(egui::Align::BOTTOM));
                     });
                 ui.separator();
@@ -146,8 +160,23 @@ impl eframe::App for LinbpqApp {
                     );
                     if ui.button("Send").clicked() {
                         match self.send_ax25_frame(&self.destination_address, &self.message_input) {
-                            Ok(text) => self.received_text.push_str(&text),
-                            Err(e) => self.received_text.push_str(&format!("Error: {}", e)),
+                            Ok(text) => {
+                                let message = Message {
+                                    source: "Me".to_string(),
+                                    destination: self.destination_address.clone(),
+                                    content: self.message_input.clone(),
+                                };
+                                self.received_messages.push(message);
+                            }
+                            Err(e) => {
+                                let error_message = format!("Error: {}", e);
+                                let error_display = Message {
+                                    source: "System".to_string(),
+                                    destination: "N/A".to_string(),
+                                    content: error_message,
+                                };
+                                self.received_messages.push(error_display);
+                            }
                         }
                         // Clear input fields
                         self.destination_address.clear();
@@ -158,12 +187,14 @@ impl eframe::App for LinbpqApp {
         });
 
         if let Some(rx) = &self.received_messages_rx {
-            while let Ok(message) = rx.try_recv() {
-                // Example parsing logic; adjust based on actual message format
-                if let Some((source, content)) = parse_message(&message) {
-                    let formatted_message = format!("**{}:**\t{}", source, content);
-                    self.received_text.push_str(&formatted_message);
-                    self.received_text.push('\n');
+            while let Ok(message_str) = rx.try_recv() {
+                if let Some((source, content)) = parse_message(&message_str) {
+                    let message = Message {
+                        source,
+                        destination: self.destination_address.clone(), // Assuming destination is stored in self.destination_address
+                        content,
+                    };
+                    self.received_messages.push(message);
                 }
             }
         }
@@ -174,5 +205,5 @@ impl eframe::App for LinbpqApp {
 fn parse_message(message: &str) -> Option<(String, String)> {
     // Parse the message to extract the source and content
     // Return them as a tuple
-    Some(("Source".to_string(), "Content".to_string()))
+    Some(("Source".to_string(), message.to_string()))
 }
