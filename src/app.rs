@@ -159,9 +159,20 @@ impl eframe::App for LinbpqApp {
 
         if let Some(rx) = &self.received_messages_rx {
             while let Ok(message) = rx.try_recv() {
-                self.received_text.push_str(&message);
-                self.received_text.push('\n');
+                // Example parsing logic; adjust based on actual message format
+                if let Some((source, content)) = parse_message(&message) {
+                    let formatted_message = format!("**{}:**\t{}", source, content);
+                    self.received_text.push_str(&formatted_message);
+                    self.received_text.push('\n');
+                }
             }
         }
     }
+}
+
+// Placeholder function; implement according to your message format
+fn parse_message(message: &str) -> Option<(String, String)> {
+    // Parse the message to extract the source and content
+    // Return them as a tuple
+    Some(("Source".to_string(), "Content".to_string()))
 }
