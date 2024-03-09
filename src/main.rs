@@ -3,8 +3,7 @@
 
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
-#[tokio::main]
-async fn main() -> eframe::Result<()> {
+fn main() -> eframe::Result<()> {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
     let native_options = eframe::NativeOptions {
@@ -27,8 +26,7 @@ async fn main() -> eframe::Result<()> {
 
 // When compiling to web using trunk:
 #[cfg(target_arch = "wasm32")]
-#[tokio::main]
-async fn main() {
+fn main() {
     // Redirect `log` message to `console.log` and friends:
     eframe::WebLogger::init(log::LevelFilter::Debug).ok();
 
