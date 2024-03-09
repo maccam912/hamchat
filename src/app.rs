@@ -48,6 +48,7 @@ impl LinbpqApp {
             let tnc = Tnc::open(&addr).expect("Failed to open TNC");
             let receiver = tnc.incoming();
             while let Ok(frame) = receiver.recv().unwrap() {
+                dbg!(&frame);
                 let message = format!("{}", frame);
                 tx.send(message).expect("Failed to send message");
             }
