@@ -55,7 +55,8 @@ impl LinbpqApp {
         message: &str,
     ) -> Result<String, Box<dyn Error>> {
         let tnc_address_str = "tnc:tcpkiss:127.0.0.1:8001";
-        let source_callsign = "CALLSIGN";
+        let source_callsign =
+            std::env::var("CALLSIGN").unwrap_or_else(|_| "DEFAULT_CALLSIGN".to_string());
         let dest_callsign = destination_address;
 
         let addr = tnc_address_str.parse::<TncAddress>()?;
