@@ -419,6 +419,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
+name = "ax25"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97fec6189a57a9668a17aa3368d110b1451450df47b85200f43d93357fb21f3b"
+
+[[package]]
+name = "ax25_tnc"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6b2d028c311023847274e5dc5627bd2bafe62c12ce1408239d2117d469819bd"
+dependencies = [
+ "ax25",
+ "libc",
+]
+
+[[package]]
 name = "backtrace"
 version = "0.3.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1353,6 +1369,8 @@ dependencies = [
 name = "hamchat"
 version = "0.1.0"
 dependencies = [
+ "ax25",
+ "ax25_tnc",
  "eframe",
  "egui",
  "env_logger",

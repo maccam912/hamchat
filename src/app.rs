@@ -1,4 +1,8 @@
-use std::{error::Error, io::Write, net::TcpStream};
+use ax25::frame::{
+    Address, Ax25Frame, CommandResponse, FrameContent, ProtocolIdentifier, UnnumberedInformation,
+};
+use ax25_tnc::tnc::{Tnc, TncAddress};
+use std::error::Error;
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -23,26 +27,33 @@ impl LinbpqApp {
 }
 
 fn tester() -> Result<String, Box<dyn Error>> {
-    let mut stream = TcpStream::connect("127.0.0.1:8001")?;
+    // Example values for demonstration purposes
+    let tnc_address_str = "tnc:tcpkiss:127.0.0.1:8001";
+    let source_callsign = "CALLSIGN";
+    let dest_callsign = "DEST";
+    let message = "Your message here";
 
-    // Example data for "CALLSIGN>ID:" message (ensure to replace with actual data)
-    let data = b"CALLSIGN>ID:";
-    let mut frame = Vec::new();
-    frame.push(0x7E); // Start Flag
-    // Add destination address (7 bytes, left-shifted one bit, with last byte ORed with 0x01)
-    frame.extend_from_slice(&[0x96, 0x88, 0x64, 0x88, 0x98, 0x40, 0xE0]);
-    // Add source address (7 bytes, left-shifted one bit)
-    frame.extend_from_slice(&[0x86, 0xA2, 0x68, 0x94, 0x88, 0x8A, 0x61]);
-    frame.push(0x03); // Control Field for UI frame
-    frame.push(0xF0); // PID Field for no layer 3 protocol
-    frame.extend_from_slice(data); // Information Field
-    frame.push(0x7E); // End Flag
+    let addr = tnc_address_str.parse::<TncAddress>()?;
+    let src = source_callsign.parse::<Address>()?;
+    let dest = dest_callsign.parse::<Address>()?;
+    let tnc = Tnc::open(&addr)?;
 
-    stream.write_all(&frame)?;
-    stream.flush()?;
-    println!("KISS frame sent successfully!");
+    let frame = Ax25Frame {
+        source: src,
+        destination: dest,
+        route: Vec::new(),
+        command_or_response: Some(CommandResponse::Command),
+        content: FrameContent::UnnumberedInformation(UnnumberedInformation {
+            pid: ProtocolIdentifier::None,
+            info: message.as_bytes().to_vec(),
+            poll_or_final: false,
+        }),
+    };
 
-    Ok("KISS frame sent".into())
+    tnc.send_frame(&frame)?;
+    println!("Transmitted!");
+
+    Ok("AX.25 frame sent".into())
 }
 
 impl eframe::App for LinbpqApp {
