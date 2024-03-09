@@ -25,18 +25,18 @@ impl LinbpqApp {
 fn tester() -> Result<String, Box<dyn Error>> {
     let mut stream = TcpStream::connect("127.0.0.1:8001")?;
 
-    // KISS frame boundary
-    let frame_start_end = 0xC0;
-    // KISS command/data byte for data frames (assuming port 0)
-    let command = 0x00;
-
-    // Example KISS frame to send (replace with actual frame content)
-    let data = b"Hello, Direwolf!";
+    // Example data for "CALLSIGN>ID:" message (ensure to replace with actual data)
+    let data = b"CALLSIGN>ID:";
     let mut frame = Vec::new();
-    frame.push(frame_start_end);
-    frame.push(command);
-    frame.extend_from_slice(data);
-    frame.push(frame_start_end);
+    frame.push(0x7E); // Start Flag
+    // Add destination address (7 bytes, left-shifted one bit, with last byte ORed with 0x01)
+    frame.extend_from_slice(&[0x96, 0x88, 0x64, 0x88, 0x98, 0x40, 0xE0]);
+    // Add source address (7 bytes, left-shifted one bit)
+    frame.extend_from_slice(&[0x86, 0xA2, 0x68, 0x94, 0x88, 0x8A, 0x61]);
+    frame.push(0x03); // Control Field for UI frame
+    frame.push(0xF0); // PID Field for no layer 3 protocol
+    frame.extend_from_slice(data); // Information Field
+    frame.push(0x7E); // End Flag
 
     stream.write_all(&frame)?;
     stream.flush()?;
