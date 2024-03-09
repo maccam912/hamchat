@@ -54,7 +54,8 @@ impl LinbpqApp {
         destination_address: &str,
         message: &str,
     ) -> Result<String, Box<dyn Error>> {
-        let tnc_address_str = "tnc:tcpkiss:127.0.0.1:8001";
+        let tnc_address_str =
+            std::env::var("TNC_URL").unwrap_or_else(|_| "tnc:tcpkiss:localhost:8001".to_string());
         let source_callsign =
             std::env::var("CALLSIGN").unwrap_or_else(|_| "DEFAULT_CALLSIGN".to_string());
         let dest_callsign = destination_address;
@@ -94,7 +95,11 @@ impl eframe::App for LinbpqApp {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 if ui.button("Connect").clicked() {
-                    if let Err(e) = self.start_listening("tnc:tcpkiss:127.0.0.1:8001") {
+                    if let Err(e) = self.start_listening(
+                        std::env::var("TNC_URL")
+                            .unwrap_or_else(|_| "tnc:tcpkiss:localhost:8001".to_string())
+                            .as_str(),
+                    ) {
                         self.received_text
                             .push_str(&format!("Error starting listener: {}", e));
                     }
@@ -115,10 +120,12 @@ impl eframe::App for LinbpqApp {
                 ui.separator();
 
                 ui.label("Received:");
-                ui.add_sized(
-                    [ui.available_width(), ui.available_height() - 60.0],
-                    egui::Label::new(&self.received_text).wrap(true),
-                );
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    ui.add_sized(
+                        [ui.available_width(), ui.available_height() - 60.0],
+                        egui::Label::new(&self.received_text).wrap(true),
+                    );
+                });
                 ui.separator();
             });
 
