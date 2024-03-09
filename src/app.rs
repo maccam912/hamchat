@@ -89,9 +89,8 @@ impl eframe::App for LinbpqApp {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 if ui.button("Connect").clicked() {
-                    match tester() {
-                        Ok(text) => self.received_text.push_str(&text),
-                        Err(e) => self.received_text.push_str(&format!("Error: {}", e)),
+                    if let Err(e) = self.start_listening("tnc:tcpkiss:127.0.0.1:8001") {
+                        self.received_text.push_str(&format!("Error starting listener: {}", e));
                     }
                 }
                 if ui.button("Disconnect").clicked() {
@@ -124,7 +123,10 @@ impl eframe::App for LinbpqApp {
                         egui::TextEdit::singleline(&mut self.command_input),
                     );
                     if ui.button("Send").clicked() {
-                        // Send the command_input to the server
+                        match tester() {
+                            Ok(text) => self.received_text.push_str(&text),
+                            Err(e) => self.received_text.push_str(&format!("Error: {}", e)),
+                        }
                         // Clear command_input field
                         self.command_input.clear();
                     }
