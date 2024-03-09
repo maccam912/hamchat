@@ -12,6 +12,8 @@ pub struct LinbpqApp {
     // Server interaction stuff:
     received_text: String,
     command_input: String,
+    destination_address: String, // New field for destination address
+    message_input: String,       // New field for message input
     #[serde(skip)] // Correctly used to skip both serialization and deserialization
     received_messages_rx: Option<std::sync::mpsc::Receiver<String>>,
 }
@@ -46,36 +48,38 @@ impl LinbpqApp {
 
         Ok(())
     }
-}
 
-fn tester() -> Result<String, Box<dyn Error>> {
-    // Example values for demonstration purposes
-    let tnc_address_str = "tnc:tcpkiss:127.0.0.1:8001";
-    let source_callsign = "CALLSIGN";
-    let dest_callsign = "DEST";
-    let message = "Your message here";
+    fn send_ax25_frame(
+        &self,
+        destination_address: &str,
+        message: &str,
+    ) -> Result<String, Box<dyn Error>> {
+        let tnc_address_str = "tnc:tcpkiss:127.0.0.1:8001";
+        let source_callsign = "CALLSIGN";
+        let dest_callsign = destination_address;
 
-    let addr = tnc_address_str.parse::<TncAddress>()?;
-    let src = source_callsign.parse::<Address>()?;
-    let dest = dest_callsign.parse::<Address>()?;
-    let tnc = Tnc::open(&addr)?;
+        let addr = tnc_address_str.parse::<TncAddress>()?;
+        let src = source_callsign.parse::<Address>()?;
+        let dest = dest_callsign.parse::<Address>()?;
+        let tnc = Tnc::open(&addr)?;
 
-    let frame = Ax25Frame {
-        source: src,
-        destination: dest,
-        route: Vec::new(),
-        command_or_response: Some(CommandResponse::Command),
-        content: FrameContent::UnnumberedInformation(UnnumberedInformation {
-            pid: ProtocolIdentifier::None,
-            info: message.as_bytes().to_vec(),
-            poll_or_final: false,
-        }),
-    };
+        let frame = Ax25Frame {
+            source: src,
+            destination: dest,
+            route: Vec::new(),
+            command_or_response: Some(CommandResponse::Command),
+            content: FrameContent::UnnumberedInformation(UnnumberedInformation {
+                pid: ProtocolIdentifier::None,
+                info: message.as_bytes().to_vec(),
+                poll_or_final: false,
+            }),
+        };
 
-    tnc.send_frame(&frame)?;
-    println!("Transmitted!");
+        tnc.send_frame(&frame)?;
+        println!("Transmitted!");
 
-    Ok("AX.25 frame sent".into())
+        Ok("AX.25 frame sent".into())
+    }
 }
 
 impl eframe::App for LinbpqApp {
@@ -90,7 +94,8 @@ impl eframe::App for LinbpqApp {
             ui.horizontal(|ui| {
                 if ui.button("Connect").clicked() {
                     if let Err(e) = self.start_listening("tnc:tcpkiss:127.0.0.1:8001") {
-                        self.received_text.push_str(&format!("Error starting listener: {}", e));
+                        self.received_text
+                            .push_str(&format!("Error starting listener: {}", e));
                     }
                 }
                 if ui.button("Disconnect").clicked() {
@@ -118,17 +123,24 @@ impl eframe::App for LinbpqApp {
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::Min), |ui| {
                 ui.horizontal(|ui| {
+                    ui.label("Destination:");
                     ui.add_sized(
-                        [ui.available_width() - 60.0, 20.0],
-                        egui::TextEdit::singleline(&mut self.command_input),
+                        [150.0, 20.0],
+                        egui::TextEdit::singleline(&mut self.destination_address),
+                    );
+                    ui.label("Message:");
+                    ui.add_sized(
+                        [ui.available_width() - 310.0, 20.0],
+                        egui::TextEdit::singleline(&mut self.message_input),
                     );
                     if ui.button("Send").clicked() {
-                        match tester() {
+                        match self.send_ax25_frame(&self.destination_address, &self.message_input) {
                             Ok(text) => self.received_text.push_str(&text),
                             Err(e) => self.received_text.push_str(&format!("Error: {}", e)),
                         }
-                        // Clear command_input field
-                        self.command_input.clear();
+                        // Clear input fields
+                        self.destination_address.clear();
+                        self.message_input.clear();
                     }
                 });
             });
