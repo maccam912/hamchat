@@ -6,12 +6,14 @@ use std::error::Error;
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
-#[serde(default)] // if we add new fields, give them default values when deserializing old state
+#[serde(default)] // Use default for deserialization of missing fields
 #[derive(Default)]
 pub struct LinbpqApp {
     // Server interaction stuff:
     received_text: String,
     command_input: String,
+    #[serde(skip)] // Correctly used to skip both serialization and deserialization
+    received_messages_rx: Option<std::sync::mpsc::Receiver<String>>,
 }
 
 impl LinbpqApp {
@@ -23,6 +25,26 @@ impl LinbpqApp {
         }
 
         Default::default()
+    }
+
+    pub fn start_listening(
+        &mut self,
+        tnc_address_str: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let (tx, rx) = std::sync::mpsc::channel();
+        self.received_messages_rx = Some(rx);
+
+        let addr = tnc_address_str.parse::<TncAddress>()?;
+        std::thread::spawn(move || {
+            let tnc = Tnc::open(&addr).expect("Failed to open TNC");
+            let receiver = tnc.incoming();
+            while let Ok(frame) = receiver.recv().unwrap() {
+                let message = format!("{}", frame);
+                tx.send(message).expect("Failed to send message");
+            }
+        });
+
+        Ok(())
     }
 }
 
@@ -109,5 +131,12 @@ impl eframe::App for LinbpqApp {
                 });
             });
         });
+
+        if let Some(rx) = &self.received_messages_rx {
+            while let Ok(message) = rx.try_recv() {
+                self.received_text.push_str(&message);
+                self.received_text.push('\n');
+            }
+        }
     }
 }
