@@ -120,12 +120,15 @@ impl eframe::App for LinbpqApp {
                 ui.separator();
 
                 ui.label("Received:");
-                egui::ScrollArea::vertical().show(ui, |ui| {
-                    ui.add_sized(
-                        [ui.available_width(), ui.available_height() - 60.0],
-                        egui::Label::new(&self.received_text).wrap(true),
-                    );
-                });
+                egui::ScrollArea::vertical()
+                    .auto_shrink([false; 2])
+                    .show(ui, |ui| {
+                        ui.add_sized(
+                            [ui.available_width(), ui.available_height() - 60.0],
+                            egui::Label::new(&self.received_text).wrap(true),
+                        );
+                        ui.scroll_to_cursor(Some(egui::Align::BOTTOM));
+                    });
                 ui.separator();
             });
 
