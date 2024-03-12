@@ -25,6 +25,8 @@ jobs:
           prerelease: false
 
   build_ubuntu:
+    permissions:
+      contents: write
     needs: create_release
     runs-on: ubuntu-latest
     steps:
@@ -49,6 +51,8 @@ jobs:
           asset_content_type: application/octet-stream
 
   build_macos:
+    permissions:
+      contents: write
     needs: create_release
     runs-on: macos-latest
     steps:
@@ -73,6 +77,8 @@ jobs:
           asset_content_type: application/octet-stream
 
   build_windows:
+    permissions:
+      contents: write
     needs: create_release
     runs-on: windows-latest
     steps:
