@@ -28,6 +28,8 @@ jobs:
           path: target/release/hamchat
 
   create_release:
+    permissions:
+      contents: write
     needs: build
     runs-on: ubuntu-latest
     steps:
