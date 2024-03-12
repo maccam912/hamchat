@@ -12,8 +12,8 @@ pub struct LinbpqApp {
     // Server interaction stuff:
     received_messages: Vec<Message>,
     command_input: String,
-    callsign: String, // Add this line
-    message_input: String,       // New field for message input
+    callsign: String,      // Add this line
+    message_input: String, // New field for message input
     #[serde(skip)] // Correctly used to skip both serialization and deserialization
     received_messages_rx: Option<std::sync::mpsc::Receiver<Message>>,
 }
@@ -164,7 +164,7 @@ impl eframe::App for LinbpqApp {
                     .show(ui, |ui| {
                         for message in &self.received_messages {
                             ui.label(format!(
-                                "**{} -> {}:**\t{}",
+                                "{} -> {}:\n\t{}",
                                 message.source, message.destination, message.content
                             ));
                         }
@@ -181,11 +181,11 @@ impl eframe::App for LinbpqApp {
                         egui::TextEdit::singleline(&mut self.message_input),
                     );
                     if ui.button("Send").clicked() {
-                        match self.send_ax25_frame("HARECH-0", &self.message_input) {
+                        match self.send_ax25_frame("HRRC-0", &self.message_input) {
                             Ok(_) => {
                                 let message = Message {
                                     source: self.callsign.clone(),
-                                    destination: "HARECH-0".to_string(),
+                                    destination: "HRRC-0".to_string(),
                                     content: self.message_input.clone(),
                                 };
                                 self.received_messages.push(message);
