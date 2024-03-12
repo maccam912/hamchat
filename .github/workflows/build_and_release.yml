@@ -24,8 +24,9 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ runner.os }}-binary
-          path: target/release/hamchat
+          #name: ${{ runner.os }}-binary
+          name: hamchat
+          path: target/release
 
   create_release:
     permissions:
@@ -50,6 +51,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./target/release/hamchat
-          asset_name: hamchat-${{ runner.os }}
+          asset_path: ./target/release
+          #asset_name: hamchat-${{ runner.os }}
+          asset_name: hamchat
           asset_content_type: application/octet-stream
