@@ -12,7 +12,7 @@ pub struct LinbpqApp {
     // Server interaction stuff:
     received_messages: Vec<Message>,
     command_input: String,
-    destination_address: String, // New field for destination address
+    callsign: String, // Add this line
     message_input: String,       // New field for message input
     #[serde(skip)] // Correctly used to skip both serialization and deserialization
     received_messages_rx: Option<std::sync::mpsc::Receiver<Message>>,
@@ -82,14 +82,13 @@ impl LinbpqApp {
 
     fn send_ax25_frame(
         &self,
-        destination_address: &str,
+        _destination_address: &str,
         message: &str,
     ) -> Result<String, Box<dyn Error>> {
         let tnc_address_str =
             std::env::var("TNC_URL").unwrap_or_else(|_| "tnc:tcpkiss:localhost:8001".to_string());
-        let source_callsign =
-            std::env::var("CALLSIGN").unwrap_or_else(|_| "DEFAULT_CALLSIGN".to_string());
-        let dest_callsign = destination_address;
+        let source_callsign = self.callsign.clone();
+        let dest_callsign = "HARECH-0";
 
         let addr = tnc_address_str.parse::<TncAddress>()?;
         let src = source_callsign.parse::<Address>()?;
@@ -125,6 +124,8 @@ impl eframe::App for LinbpqApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
+                ui.label("Callsign:");
+                ui.text_edit_singleline(&mut self.callsign);
                 if ui.button("Connect").clicked() {
                     if let Err(e) = self.start_listening(
                         std::env::var("TNC_URL")
@@ -151,13 +152,15 @@ impl eframe::App for LinbpqApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical(|ui| {
-                ui.heading("Linbpq Server Interface");
+                ui.heading("Chattateria");
 
                 ui.separator();
 
                 ui.label("Received:");
+                // Adjust the height of the ScrollArea to ensure the bottom row of text is visible
                 egui::ScrollArea::vertical()
                     .auto_shrink([false; 2])
+                    .max_height(ui.available_height() - 60.0) // Adjusted height to leave space for the text input area
                     .show(ui, |ui| {
                         for message in &self.received_messages {
                             ui.label(format!(
@@ -172,22 +175,17 @@ impl eframe::App for LinbpqApp {
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::Min), |ui| {
                 ui.horizontal(|ui| {
-                    ui.label("Destination:");
-                    ui.add_sized(
-                        [150.0, 20.0],
-                        egui::TextEdit::singleline(&mut self.destination_address),
-                    );
                     ui.label("Message:");
                     ui.add_sized(
-                        [ui.available_width() - 310.0, 20.0],
+                        [ui.available_width() - 160.0, 20.0],
                         egui::TextEdit::singleline(&mut self.message_input),
                     );
                     if ui.button("Send").clicked() {
-                        match self.send_ax25_frame(&self.destination_address, &self.message_input) {
+                        match self.send_ax25_frame("HARECH-0", &self.message_input) {
                             Ok(_) => {
                                 let message = Message {
-                                    source: "Me".to_string(),
-                                    destination: self.destination_address.clone(),
+                                    source: self.callsign.clone(),
+                                    destination: "HARECH-0".to_string(),
                                     content: self.message_input.clone(),
                                 };
                                 self.received_messages.push(message);
@@ -203,13 +201,11 @@ impl eframe::App for LinbpqApp {
                             }
                         }
                         // Clear input fields
-                        self.destination_address.clear();
                         self.message_input.clear();
                     }
                 });
             });
         });
-
         if let Some(rx) = &self.received_messages_rx {
             while let Ok(message) = rx.try_recv() {
                 self.received_messages.push(message);
