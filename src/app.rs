@@ -8,12 +8,13 @@ use std::error::Error;
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // Use default for deserialization of missing fields
 #[derive(Default)]
-pub struct LinbpqApp {
+pub struct HamchatApp {
     // Server interaction stuff:
     received_messages: Vec<Message>,
     command_input: String,
     callsign: String,      // Add this line
     message_input: String, // New field for message input
+    show_only_hrrc: bool,  // New field to track filter state
     #[serde(skip)] // Correctly used to skip both serialization and deserialization
     received_messages_rx: Option<std::sync::mpsc::Receiver<Message>>,
 }
@@ -25,7 +26,7 @@ struct Message {
     content: String,
 }
 
-impl LinbpqApp {
+impl HamchatApp {
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // Load previous app state (if any).
@@ -114,7 +115,7 @@ impl LinbpqApp {
     }
 }
 
-impl eframe::App for LinbpqApp {
+impl eframe::App for HamchatApp {
     /// Called by the framework to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         eframe::set_value(storage, eframe::APP_KEY, self);
@@ -126,6 +127,7 @@ impl eframe::App for LinbpqApp {
             ui.horizontal(|ui| {
                 ui.label("Callsign:");
                 ui.text_edit_singleline(&mut self.callsign);
+                ui.checkbox(&mut self.show_only_hrrc, "Show only HRRC traffic");
                 if ui.button("Connect").clicked() {
                     if let Err(e) = self.start_listening(
                         std::env::var("TNC_URL")
@@ -163,10 +165,12 @@ impl eframe::App for LinbpqApp {
                     .max_height(ui.available_height() - 60.0) // Adjusted height to leave space for the text input area
                     .show(ui, |ui| {
                         for message in &self.received_messages {
-                            ui.label(format!(
-                                "{} -> {}:\n\t{}",
-                                message.source, message.destination, message.content
-                            ));
+                            if !self.show_only_hrrc || message.destination.starts_with("HRRC-") {
+                                ui.label(format!(
+                                    "{} -> {}:\n\t{}",
+                                    message.source, message.destination, message.content
+                                ));
+                            }
                         }
                         ui.scroll_to_cursor(Some(egui::Align::BOTTOM));
                     });
