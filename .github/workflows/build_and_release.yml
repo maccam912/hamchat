@@ -6,12 +6,9 @@ on:
       - 'v*'
 
 jobs:
-  build:
-    name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+  build_ubuntu:
+    name: Build on Ubuntu
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Set up Rust
@@ -22,28 +19,48 @@ jobs:
       - name: Build
         run: cargo build --release
       - name: Rename binary Ubuntu
-        if: matrix.os == 'ubuntu-latest'
         run: mv target/release/hamchat target/release/hamchat-ubuntu-latest
       - name: Upload artifact Ubuntu
-        if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v2
         with:
           name: hamchat-ubuntu-latest
           path: target/release/hamchat-ubuntu-latest
+
+  build_macos:
+    name: Build on macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Build
+        run: cargo build --release
       - name: Rename binary macOS
-        if: matrix.os == 'macos-latest'
         run: mv target/release/hamchat target/release/hamchat-macos-latest
       - name: Upload artifact macOS
-        if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v2
         with:
           name: hamchat-macos-latest
           path: target/release/hamchat-macos-latest
+
+  build_windows:
+    name: Build on Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Build
+        run: cargo build --release
       - name: Rename binary Windows
-        if: matrix.os == 'windows-latest'
         run: mv target/release/hamchat.exe target/release/hamchat-windows-latest.exe
       - name: Upload artifact Windows
-        if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v2
         with:
           name: hamchat-windows-latest
@@ -52,7 +69,7 @@ jobs:
   create_release:
     permissions:
       contents: write
-    needs: build
+    needs: [build_ubuntu, build_macos, build_windows]
     runs-on: ubuntu-latest
     steps:
       - name: Create Release
