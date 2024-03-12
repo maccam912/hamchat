@@ -89,7 +89,7 @@ impl HamchatApp {
         let tnc_address_str =
             std::env::var("TNC_URL").unwrap_or_else(|_| "tnc:tcpkiss:localhost:8001".to_string());
         let source_callsign = self.callsign.clone();
-        let dest_callsign = "HARECH-0";
+        let dest_callsign = "HRRC-0";
 
         let addr = tnc_address_str.parse::<TncAddress>()?;
         let src = source_callsign.parse::<Address>()?;
