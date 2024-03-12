@@ -21,18 +21,33 @@ jobs:
           override: true
       - name: Build
         run: cargo build --release
-      - name: Rename binary
-        run: |
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            mv target/release/hamchat.exe target/release/hamchat-${{ matrix.os }}.exe
-          else
-            mv target/release/hamchat target/release/hamchat-${{ matrix.os }}
-          fi
-      - name: Upload artifact
+      - name: Rename binary Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: mv target/release/hamchat target/release/hamchat-ubuntu-latest
+      - name: Upload artifact Ubuntu
+        if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v2
         with:
-          name: hamchat-${{ matrix.os }}
-          path: target/release/hamchat-${{ matrix.os }}
+          name: hamchat-ubuntu-latest
+          path: target/release/hamchat-ubuntu-latest
+      - name: Rename binary macOS
+        if: matrix.os == 'macos-latest'
+        run: mv target/release/hamchat target/release/hamchat-macos-latest
+      - name: Upload artifact macOS
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v2
+        with:
+          name: hamchat-macos-latest
+          path: target/release/hamchat-macos-latest
+      - name: Rename binary Windows
+        if: matrix.os == 'windows-latest'
+        run: mv target/release/hamchat.exe target/release/hamchat-windows-latest.exe
+      - name: Upload artifact Windows
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v2
+        with:
+          name: hamchat-windows-latest
+          path: target/release/hamchat-windows-latest.exe
 
   create_release:
     permissions:
