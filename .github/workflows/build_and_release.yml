@@ -22,7 +22,12 @@ jobs:
       - name: Build
         run: cargo build --release
       - name: Rename binary
-        run: mv target/release/hamchat target/release/hamchat-${{ matrix.os }}
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            mv target/release/hamchat.exe target/release/hamchat-${{ matrix.os }}.exe
+          else
+            mv target/release/hamchat target/release/hamchat-${{ matrix.os }}
+          fi
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
@@ -70,6 +75,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./target/release/hamchat-windows-latest
-          asset_name: hamchat-windows-latest
+          asset_path: ./target/release/hamchat-windows-latest.exe
+          asset_name: hamchat-windows-latest.exe
           asset_content_type: application/octet-stream
