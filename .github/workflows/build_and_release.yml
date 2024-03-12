@@ -6,71 +6,10 @@ on:
       - 'v*'
 
 jobs:
-  build_ubuntu:
-    name: Build on Ubuntu
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - name: Build
-        run: cargo build --release
-      - name: Rename binary Ubuntu
-        run: mv target/release/hamchat target/release/hamchat-ubuntu-latest
-      - name: Upload artifact Ubuntu
-        uses: actions/upload-artifact@v2
-        with:
-          name: hamchat-ubuntu-latest
-          path: target/release/hamchat-ubuntu-latest
-
-  build_macos:
-    name: Build on macOS
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - name: Build
-        run: cargo build --release
-      - name: Rename binary macOS
-        run: mv target/release/hamchat target/release/hamchat-macos-latest
-      - name: Upload artifact macOS
-        uses: actions/upload-artifact@v2
-        with:
-          name: hamchat-macos-latest
-          path: target/release/hamchat-macos-latest
-
-  build_windows:
-    name: Build on Windows
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - name: Build
-        run: cargo build --release
-      - name: Rename binary Windows
-        run: mv target/release/hamchat.exe target/release/hamchat-windows-latest.exe
-      - name: Upload artifact Windows
-        uses: actions/upload-artifact@v2
-        with:
-          name: hamchat-windows-latest
-          path: target/release/hamchat-windows-latest.exe
-
   create_release:
-    permissions:
-      contents: write
-    needs: [build_ubuntu, build_macos, build_windows]
     runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
       - name: Create Release
         id: create_release
@@ -83,30 +22,74 @@ jobs:
           draft: false
           prerelease: false
 
+  build_ubuntu:
+    needs: create_release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Build
+        run: cargo build --release
+      - name: Rename binary Ubuntu
+        run: mv target/release/hamchat target/release/hamchat-ubuntu-latest
       - name: Upload Release Asset Ubuntu
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
           asset_path: ./target/release/hamchat-ubuntu-latest
           asset_name: hamchat-ubuntu-latest
           asset_content_type: application/octet-stream
+
+  build_macos:
+    needs: create_release
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Build
+        run: cargo build --release
+      - name: Rename binary macOS
+        run: mv target/release/hamchat target/release/hamchat-macos-latest
       - name: Upload Release Asset macOS
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
           asset_path: ./target/release/hamchat-macos-latest
           asset_name: hamchat-macos-latest
           asset_content_type: application/octet-stream
+
+  build_windows:
+    needs: create_release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Build
+        run: cargo build --release
+      - name: Rename binary Windows
+        run: mv target/release/hamchat.exe target/release/hamchat-windows-latest.exe
       - name: Upload Release Asset Windows
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
           asset_path: ./target/release/hamchat-windows-latest.exe
           asset_name: hamchat-windows-latest.exe
           asset_content_type: application/octet-stream
